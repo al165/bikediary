@@ -6,5 +6,7 @@ package-lock.json
 *.db
 cache.json
 
+*.gpx
+
 uploads/images/*.jpg
 uploads/images/.thumbs

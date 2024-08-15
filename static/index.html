@@ -85,20 +85,20 @@
             } catch {
             }
 
-
-            const currentMarker = L.marker(latlongs.at(0).at(0), {
-                icon: new L.BeautifyIcon.icon({
-                    iconShape: 'marker',
-                    borderWidth: 4,
-                    borderColor: "blue",
-                    icon: null,
-                    text: "",
-                    textColor: "blue",
-                })
-            }).addTo(map);
+            if (latlongs[0].length > 0) {
+                const currentMarker = L.marker(latlongs.at(0).at(0), {
+                    icon: new L.BeautifyIcon.icon({
+                        iconShape: 'marker',
+                        borderWidth: 4,
+                        borderColor: "blue",
+                        icon: null,
+                        text: "",
+                        textColor: "blue",
+                    })
+                }).addTo(map);
+            }
 
             const geodesic = new L.Geodesic(jumps, { color: 'blue', opacity: 0.5, dashArray: '8', weight: 2 }).arrowheads({ size: '12px', dashArray: '0' }).addTo(map);
-
 
             for (const msg of messageData) {
                 const latlong = L.latLng(msg['latitude'], msg['longitude']);
