@@ -1,0 +1,31 @@
+{
+    "name": "bikediary",
+    "version": "1.0.0",
+    "description": "Tracker website for bike touring",
+    "main": "index.js",
+    "scripts": {
+        "start": "nodemon index.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "type": "module",
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "express-session": "^1.18.0",
+        "multer": "^1.4.5-lts.1",
+        "nodemon": "^3.1.4",
+        "sharp": "^0.33.4",
+        "socket.io": "^4.7.5",
+        "sqlite3": "^5.1.7"
+    },
+    "nodemonConfig": {
+        "ignore": [
+            "uploads/*",
+            "cache.json",
+            "db/*"
+        ]
+    }
+}
