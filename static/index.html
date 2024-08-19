@@ -33,7 +33,7 @@
     <script>
 
         function updatePoints(data) {
-
+            latlongs = [[]];
             for (const msg of data) {
                 const latlong = [msg['latitude'], msg['longitude']];
                 if (msg['unixTime'] < lastUnixTime - 12 * 60 * 60) {
@@ -65,6 +65,7 @@
         let lastUnixTime = 0;
         let lastLatLong;
         let messageData = [];
+        let polyline;
 
 
         async function getPoints() {
@@ -75,16 +76,22 @@
             drawOverlay();
         }
 
-        setInterval(getPoints, 1000*60*2);
+        setInterval(getPoints, 1000 * 60 * 2);
 
         function drawOverlay() {
-            const polyline = L.polyline(latlongs, { color: 'blue', weight: 2, smoothFactor: 3 }).arrowheads({
+
+            if (polyline) {
+                polyline.remove(map);
+            }
+
+            polyline = L.polyline(latlongs, { color: 'blue', weight: 2, smoothFactor: 3 }).arrowheads({
                 frequency: '50px',
                 size: '12px'
             }).addTo(map);
 
             try {
-                map.fitBounds(polyline.getBounds());
+                //map.fitBounds(polyline.getBounds());
+
             } catch {
             }
 
@@ -99,6 +106,8 @@
                         textColor: "blue",
                     })
                 }).addTo(map);
+
+                map.setView(currentMarker.getLatLng(), 5);
             }
 
             const geodesic = new L.Geodesic(jumps, { color: 'blue', opacity: 0.5, dashArray: '8', weight: 2 }).arrowheads({ size: '12px', dashArray: '0' }).addTo(map);
