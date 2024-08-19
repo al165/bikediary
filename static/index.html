@@ -107,7 +107,7 @@
                     })
                 }).addTo(map);
 
-                map.setView(currentMarker.getLatLng(), 5);
+                map.setView(currentMarker.getLatLng(), 9);
             }
 
             const geodesic = new L.Geodesic(jumps, { color: 'blue', opacity: 0.5, dashArray: '8', weight: 2 }).arrowheads({ size: '12px', dashArray: '0' }).addTo(map);
