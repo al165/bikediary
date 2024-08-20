@@ -27,6 +27,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/2.0.0/gpx.min.js"></script>
     <script src="leaflet-beautify-marker-icon.js"></script>
     <script src="marker-direction.min.js"></script>
+    <script src="leaflet-distance-marker.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="leaflet-distance-marker.css" media="screen" />
 
     <div id="map"></div>
 
@@ -86,10 +88,16 @@
                 polyline.remove(map);
             }
 
-            polyline = L.polyline(latlongs, { color: 'blue', weight: 2, smoothFactor: 3 }).arrowheads({
-                frequency: '50px',
-                size: '12px'
-            }).addTo(map);
+            polyline = L.polyline(latlongs,
+                {
+                    color: 'blue',
+                    weight: 2,
+                    smoothFactor: 3,
+                    distanceMarkers: true
+                }).arrowheads({
+                    frequency: '50px',
+                    size: '12px'
+                }).addTo(map);
 
             if (latlongs[0].length > 0) {
                 if (currentMarker)
