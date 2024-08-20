@@ -93,7 +93,6 @@
                     color: 'blue',
                     weight: 2,
                     smoothFactor: 3,
-                    distanceMarkers: true
                 }).arrowheads({
                     frequency: '50px',
                     size: '12px'
@@ -152,7 +151,8 @@
             async: true,
             polyline_options: {
                 color: 'red',
-                weight: 2
+                weight: 2,
+                distanceMarkers: true
             }
         }).on('addpoint', function (ev) {
             if (ev.point_type === "start") {
