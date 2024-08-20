@@ -17,7 +17,6 @@
 </head>
 
 <body>
-
     <!-- Make sure you put this AFTER Leaflet's CSS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -102,6 +101,9 @@
                 if (currentMarker)
                     currentMarker.remove(map);
 
+                const lat = latlongs.at(0).at(-1)[0];
+                const lng = latlongs.at(0).at(-1)[1];
+
                 currentMarker = L.marker(latlongs.at(0).at(-1), {
                     icon: new L.BeautifyIcon.icon({
                         iconShape: 'marker',
@@ -113,8 +115,10 @@
                     })
                 }).addTo(map);
 
+                currentMarker.bindPopup(`<b>Current position</b><br><a href="https://maps.google.com/?q=${lat},${lng} target="_blank" rel="noopener noreferrer">view on Google Maps</a>`);
+
                 if (!loaded)
-                    map.setView(currentMarker.getLatLng(), 9);
+                    map.setView(currentMarker.getLatLng(), 11);
             }
 
             const geodesic = new L.Geodesic(jumps, { color: 'blue', opacity: 0.5, dashArray: '8', weight: 2 }).arrowheads({ size: '12px', dashArray: '0' }).addTo(map);
@@ -132,7 +136,6 @@
                 marker.bindTooltip(`Message: ${msg['messageType']}`);
             }
             messageMarkerLayer.addTo(map);
-
 
             loaded = true;
         }
@@ -153,9 +156,7 @@
                 color: 'red',
                 weight: 2,
                 distanceMarkers: {
-                    showAll: 13, iconSize: [22, 16], lazy: true, textFunction: (distance, index, offset) => {
-                        return (plannedDistance - distance) / 1000;
-                    }
+                    showAll: 12, iconSize: [22, 16]
                 }
             }
         }).on('addpoint', function (ev) {
@@ -182,8 +183,6 @@
             console.log(Math.round(ev.target.get_distance() / 100) / 10 + 'km');
             console.log(ev.target.get_duration_string(ev.target.get_total_time(), true));
             console.log(ev.target.get_elevation_gain() + 'm');
-            plannedDistance = ev.target.get_distance();
-            plannedRoute.addDistanceMarkers();
         }).addTo(map);
 
         layerControls.addOverlay(plannedRoute, "Planned Route");
