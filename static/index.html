@@ -66,6 +66,9 @@
         let lastLatLong;
         let messageData = [];
         let polyline;
+        let currentMarker;
+        let plannedRoute;
+        let loaded = false;
 
 
         async function getPoints() {
@@ -79,7 +82,6 @@
         setInterval(getPoints, 1000 * 60 * 2);
 
         function drawOverlay() {
-
             if (polyline) {
                 polyline.remove(map);
             }
@@ -89,14 +91,11 @@
                 size: '12px'
             }).addTo(map);
 
-            try {
-                //map.fitBounds(polyline.getBounds());
-
-            } catch {
-            }
-
             if (latlongs[0].length > 0) {
-                const currentMarker = L.marker(latlongs.at(0).at(-1), {
+                if (currentMarker)
+                    currentMarker.remove(map);
+
+                currentMarker = L.marker(latlongs.at(0).at(-1), {
                     icon: new L.BeautifyIcon.icon({
                         iconShape: 'marker',
                         borderWidth: 4,
@@ -107,7 +106,8 @@
                     })
                 }).addTo(map);
 
-                map.setView(currentMarker.getLatLng(), 9);
+                if (!loaded)
+                    map.setView(currentMarker.getLatLng(), 9);
             }
 
             const geodesic = new L.Geodesic(jumps, { color: 'blue', opacity: 0.5, dashArray: '8', weight: 2 }).arrowheads({ size: '12px', dashArray: '0' }).addTo(map);
@@ -127,6 +127,7 @@
             messageMarkerLayer.addTo(map);
 
 
+            loaded = true;
         }
 
         let map = L.map('map').setView([50.0469811, 19.9223924], 5);
@@ -139,7 +140,7 @@
         let messageMarkerLayer = L.layerGroup();
         let layerControls = L.control.layers(null, { 'Messages': messageMarkerLayer }).addTo(map);
 
-        const plannedRoute = new L.GPX('planned.gpx', {
+        plannedRoute = new L.GPX('planned.gpx', {
             async: true,
             polyline_options: {
                 color: 'red',
