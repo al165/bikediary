@@ -146,13 +146,17 @@
 
         let messageMarkerLayer = L.layerGroup();
         let layerControls = L.control.layers(null, { 'Messages': messageMarkerLayer }).addTo(map);
-
+        let plannedDistance = 0;
         plannedRoute = new L.GPX('planned.gpx', {
             async: true,
             polyline_options: {
                 color: 'red',
                 weight: 2,
-                distanceMarkers: {showAll: 15, iconSize: [22, 16]}
+                distanceMarkers: {
+                    showAll: 13, iconSize: [22, 16], lazy: true, textFunction: (distance, index, offset) => {
+                        return (plannedDistance - distance) / 1000;
+                    }
+                }
             }
         }).on('addpoint', function (ev) {
             if (ev.point_type === "start") {
@@ -178,7 +182,8 @@
             console.log(Math.round(ev.target.get_distance() / 100) / 10 + 'km');
             console.log(ev.target.get_duration_string(ev.target.get_total_time(), true));
             console.log(ev.target.get_elevation_gain() + 'm');
-
+            plannedDistance = ev.target.get_distance();
+            plannedRoute.addDistanceMarkers();
         }).addTo(map);
 
         layerControls.addOverlay(plannedRoute, "Planned Route");
