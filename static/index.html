@@ -115,7 +115,7 @@
                     })
                 }).addTo(map);
 
-                currentMarker.bindPopup(`<b>Current position</b><br><a href="https://maps.google.com/?q=${lat},${lng} target="_blank" rel="noopener noreferrer">view on Google Maps</a>`);
+                currentMarker.bindPopup(`<b>Current position</b><br><a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" rel="noopener noreferrer">view on Google Maps</a>`);
 
                 if (!loaded)
                     map.setView(currentMarker.getLatLng(), 11);
@@ -156,7 +156,7 @@
                 color: 'red',
                 weight: 2,
                 distanceMarkers: {
-                    showAll: 12, iconSize: [22, 16]
+                    showAll: 13, iconSize: [22, 16]
                 }
             }
         }).on('addpoint', function (ev) {
