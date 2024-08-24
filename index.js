@@ -120,9 +120,16 @@ async function fetchSpotData(start) {
     // get data from last entry, if last entry is more than 5 minutes ago
     // if no last entry, get as much as possible...
     const API_URL = "https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/" + process.env.SPOT_API_KEY + "/message.json";
+    console.log(`API_URL: ${API_URL}`);
 
     const res = await fetch(API_URL + `?start=${start}&startDate=${startDate}`);
-    const data = await res.json();
+    let data;
+    try {
+	data = await res.json();
+    } catch (error) {
+        console.log(error);
+        return;
+    }
 
     if (data['response']['errors']) {
         allDataFetched();
