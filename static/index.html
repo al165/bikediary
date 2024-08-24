@@ -36,6 +36,7 @@
         function updatePoints(data) {
             latlongs = [[]];
             for (const msg of data) {
+            	// should only apply to ULIMITED-TRACK messages
                 const latlong = [msg['latitude'], msg['longitude']];
                 if (msg['unixTime'] < lastUnixTime - 12 * 60 * 60) {
                     // split line
@@ -49,7 +50,9 @@
                     currLine++;
 
                 }
-                latlongs[currLine].unshift(latlong);
+                msg.lat = msg.latitude;
+                msg.lng = msg.longitude;
+                latlongs[currLine].unshift(msg);
                 lastUnixTime = msg['unixTime'];
                 lastLatLong = latlong.slice();
 
@@ -101,10 +104,11 @@
                 if (currentMarker)
                     currentMarker.remove(map);
 
-                const lat = latlongs.at(0).at(-1)[0];
-                const lng = latlongs.at(0).at(-1)[1];
+                const lastPoint = latlongs.at(0).at(-1);
+                if (!lastPoint)
+                    return;
 
-                currentMarker = L.marker(latlongs.at(0).at(-1), {
+                currentMarker = L.marker(lastPoint, {
                     icon: new L.BeautifyIcon.icon({
                         iconShape: 'marker',
                         borderWidth: 4,
@@ -115,15 +119,15 @@
                     })
                 }).addTo(map);
 
-                console.log(messageData[0]);
+                console.log(lastPoint);
 
-                const updateTime = new Date(messageData[0].unixTime * 1000);
+                const updateTime = new Date(lastPoint.unixTime * 1000);
 
                 currentMarker.bindPopup(`
                 <b>Current position</b><br>
-                <a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" rel="noopener noreferrer">view on Google Maps</a>
-                <p>Last message time: ${updateTime.toUTCString()}</p>
-                <p>Tracker battery status: ${messageData[0].batteryStatus}</p>
+                <a href="https://maps.google.com/?q=${lastPoint.lat},${lastPoint.lng}" target="_blank" rel="noopener noreferrer">view on Google Maps</a>
+                <p>Last message time: ${updateTime.toString()}</p>
+                <p>Tracker battery status: ${lastPoint.batteryState.toLowerCase()}</p>
                 `);
 
                 if (!loaded) {
