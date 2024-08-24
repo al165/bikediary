@@ -115,6 +115,8 @@
                     })
                 }).addTo(map);
 
+                console.log(messageData[0]);
+
                 const updateTime = new Date(messageData[0].unixTime * 1000);
 
                 currentMarker.bindPopup(`
@@ -124,8 +126,10 @@
                 <p>Tracker battery status: ${messageData[0].batteryStatus}</p>
                 `);
 
-                if (!loaded)
+                if (!loaded) {
                     map.setView(currentMarker.getLatLng(), 11);
+                    loaded = true;
+                }
             }
 
             const geodesic = new L.Geodesic(jumps, { color: 'blue', opacity: 0.5, dashArray: '8', weight: 2 }).arrowheads({ size: '12px', dashArray: '0' }).addTo(map);
@@ -143,8 +147,6 @@
                 marker.bindTooltip(`Message: ${msg['messageType']}`);
             }
             messageMarkerLayer.addTo(map);
-
-            loaded = true;
         }
 
         let map = L.map('map').setView([50.0469811, 19.9223924], 5);
