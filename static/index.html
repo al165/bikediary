@@ -5,18 +5,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Where is Arran?</title>
-
     <link rel="stylesheet" href="style.css">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="leaflet-distance-marker.css" media="screen" />
+    <link rel="stylesheet" href="L.Control.SlideMenu.css">
     <link rel="stylesheet" href="leaflet-beautify-marker-icon.css">
 </head>
 
 <body>
+    <div id="map"></div>
+
     <!-- Make sure you put this AFTER Leaflet's CSS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -27,185 +29,10 @@
     <script src="leaflet-beautify-marker-icon.js"></script>
     <script src="marker-direction.min.js"></script>
     <script src="leaflet-distance-marker.js" type="text/javascript"></script>
-    <link rel="stylesheet" href="leaflet-distance-marker.css" media="screen" />
+    <script src=" https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js "></script>
+    <script src="L.Control.SlideMenu.js"></script>
 
-    <div id="map"></div>
-
-    <script>
-
-        function updatePoints(data) {
-            latlongs = [[]];
-            for (const msg of data) {
-            	// should only apply to ULIMITED-TRACK messages
-                const latlong = [msg['latitude'], msg['longitude']];
-                if (msg['unixTime'] < lastUnixTime - 12 * 60 * 60) {
-                    // split line
-                    if (lastLatLong) {
-                        jumps.push([
-                            latlong,
-                            lastLatLong
-                        ]);
-                    }
-                    latlongs.push([]);
-                    currLine++;
-
-                }
-                msg.lat = msg.latitude;
-                msg.lng = msg.longitude;
-                latlongs[currLine].unshift(msg);
-                lastUnixTime = msg['unixTime'];
-                lastLatLong = latlong.slice();
-
-                if (msg['messageType'] != "UNLIMITED-TRACK") {
-                    messageData.push(JSON.parse(JSON.stringify(msg)))
-                }
-            }
-
-        }
-
-        let latlongs = [[]];
-        let jumps = [];
-        let currLine = 0;
-        let lastUnixTime = 0;
-        let lastLatLong;
-        let messageData = [];
-        let polyline;
-        let currentMarker;
-        let plannedRoute;
-        let loaded = false;
-
-
-        async function getPoints() {
-            const res = await fetch("/all_messages");
-            const data = await res.json();
-
-            updatePoints(data);
-            drawOverlay();
-        }
-
-        setInterval(getPoints, 1000 * 60 * 2);
-
-        function drawOverlay() {
-            if (polyline) {
-                polyline.remove(map);
-            }
-
-            polyline = L.polyline(latlongs,
-                {
-                    color: 'blue',
-                    weight: 2,
-                    smoothFactor: 3,
-                }).arrowheads({
-                    frequency: '50px',
-                    size: '12px'
-                }).addTo(map);
-
-            if (latlongs[0].length > 0) {
-                if (currentMarker)
-                    currentMarker.remove(map);
-
-                const lastPoint = latlongs.at(0).at(-1);
-                if (!lastPoint)
-                    return;
-
-                currentMarker = L.marker(lastPoint, {
-                    icon: new L.BeautifyIcon.icon({
-                        iconShape: 'marker',
-                        borderWidth: 4,
-                        borderColor: "blue",
-                        icon: null,
-                        text: "",
-                        textColor: "blue",
-                    })
-                }).addTo(map);
-
-                console.log(lastPoint);
-
-                const updateTime = new Date(lastPoint.unixTime * 1000);
-
-                currentMarker.bindPopup(`
-                <b>Current position</b><br>
-                <a href="https://maps.google.com/?q=${lastPoint.lat},${lastPoint.lng}" target="_blank" rel="noopener noreferrer">view on Google Maps</a>
-                <p>Last message time: ${updateTime.toString()}</p>
-                <p>Tracker battery status: ${lastPoint.batteryState.toLowerCase()}</p>
-                `);
-
-                if (!loaded) {
-                    map.setView(currentMarker.getLatLng(), 11);
-                    loaded = true;
-                }
-            }
-
-            const geodesic = new L.Geodesic(jumps, { color: 'blue', opacity: 0.5, dashArray: '8', weight: 2 }).arrowheads({ size: '12px', dashArray: '0' }).addTo(map);
-
-            for (const msg of messageData) {
-                const latlong = L.latLng(msg['latitude'], msg['longitude']);
-
-                const marker = L.marker(latlong, {
-                    icon: new L.BeautifyIcon.icon({
-                        iconShape: 'circle-dot',
-                        borderWidth: 4
-                    })
-                }).addTo(messageMarkerLayer);
-                marker.bindPopup(`<b>${msg['messageType']}</b><p>${msg['messageContent']}</p>`);
-                marker.bindTooltip(`Message: ${msg['messageType']}`);
-            }
-            messageMarkerLayer.addTo(map);
-        }
-
-        let map = L.map('map').setView([50.0469811, 19.9223924], 5);
-
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
-
-        let messageMarkerLayer = L.layerGroup();
-        let layerControls = L.control.layers(null, { 'Messages': messageMarkerLayer }).addTo(map);
-        let plannedDistance = 0;
-        plannedRoute = new L.GPX('planned.gpx', {
-            async: true,
-            polyline_options: {
-                color: 'red',
-                weight: 2,
-                distanceMarkers: {
-                    showAll: 13, iconSize: [22, 16]
-                }
-            }
-        }).on('addpoint', function (ev) {
-            if (ev.point_type === "start") {
-                ev.point.bindPopup(`<b>Planned Route: ${ev.target.get_name()}</b><br>Distance: ${Math.round(ev.target.get_distance() / 100) / 10 + 'km'}<br>Expected moving time: ${ev.target.get_duration_string(ev.target.get_total_time(), true)}<br>Elevation gain: ${Math.round(ev.target.get_elevation_gain()) + 'm'}`)
-                ev.point.setIcon(new L.BeautifyIcon.icon({
-                    icon: 'play',
-                    iconShape: 'circle',
-                    borderColor: 'red',
-                    textColor: 'red'
-                }))
-                ev.point.bindTooltip('Planned route start');
-            } else if (ev.point_type === "end") {
-                ev.point.setIcon(new L.BeautifyIcon.icon({
-                    icon: 'flag',
-                    iconShape: 'circle',
-                    borderColor: 'red',
-                    textColor: 'red'
-                }));
-                ev.point.bindTooltip('Planned route end');
-            }
-        }).on('loaded', function (ev) {
-            console.log(ev.target.get_name());
-            console.log(Math.round(ev.target.get_distance() / 100) / 10 + 'km');
-            console.log(ev.target.get_duration_string(ev.target.get_total_time(), true));
-            console.log(ev.target.get_elevation_gain() + 'm');
-        }).addTo(map);
-
-        layerControls.addOverlay(plannedRoute, "Planned Route");
-
-
-        getPoints();
-        // drawOverlay();
-
-
-    </script>
+    <script src="script.js" defer></script>
 
 </body>
 
