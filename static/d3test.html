@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3.js Real-time Updating Line Plot</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div>
+        <label for="threshold">Threshold: </label>
+        <input type="number" id="threshold" value="50" step="1">
+    </div>
+    <svg width="600" height="400"></svg>
+
+    <script>
+        // Setup SVG canvas dimensions
+        const width = 600;
+        const height = 400;
+        const margin = {top: 20, right: 30, bottom: 30, left: 40};
+        const svg = d3.select("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Define the dimensions of the plot area
+        const plotWidth = width - margin.left - margin.right;
+        const plotHeight = height - margin.top - margin.bottom;
+
+        // Generate fixed data
+        const data = d3.range(100).map(d => ({ x: d, y: Math.sin(d / 10) * 50 + 50 }));
+
+        // Setup scales
+        const xScale = d3.scaleLinear().domain(d3.extent(data, d => d.x)).range([0, plotWidth]);
+        const yScale = d3.scaleLinear().domain([0, 100]).range([plotHeight, 0]);
+
+        // Create line functions for segments
+        const line = d3.line()
+            .x(d => xScale(d.x))
+            .y(d => yScale(d.y));
+
+        // Draw axes
+        svg.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0,${plotHeight})`)
+            .call(d3.axisBottom(xScale));
+
+        svg.append("g")
+            .attr("class", "y-axis")
+            .call(d3.axisLeft(yScale));
+
+        // Function to update the plot
+        function updatePlot(threshold) {
+            // Split the data based on the threshold
+            const leftData = data.filter(d => d.x < threshold);
+            const rightData = data.filter(d => d.x >= threshold);
+
+            // Bind and update the left segment
+            const leftPath = svg.selectAll(".line-left")
+                .data([leftData]);
+
+            leftPath.enter()
+                .append("path")
+                .attr("class", "line-left")
+                .merge(leftPath)
+                .attr("d", line)
+                .attr("fill", "none")
+                .attr("stroke", "red")
+                .attr("stroke-width", 2);
+
+            leftPath.exit().remove();
+
+            // Bind and update the right segment
+            const rightPath = svg.selectAll(".line-right")
+                .data([rightData]);
+
+            rightPath.enter()
+                .append("path")
+                .attr("class", "line-right")
+                .merge(rightPath)
+                .attr("d", line)
+                .attr("fill", "none")
+                .attr("stroke", "blue")
+                .attr("stroke-width", 2);
+
+            rightPath.exit().remove();
+        }
+
+        // Initial render
+        updatePlot(50);
+
+        // Update the plot when the threshold input changes
+        d3.select("#threshold").on("input", function() {
+            const newThreshold = +this.value;
+            updatePlot(newThreshold);
+        });
+    </script>
+</body>
+</html>
+

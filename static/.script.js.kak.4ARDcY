@@ -1,4 +1,4 @@
-import { ElevationPlotter } from './plotter.js';
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 let map = L.map('map').setView([50.0469811, 19.9223924], 5);
 
@@ -51,7 +51,6 @@ let plannedPoints = [];
 let lastMessage;
 let loaded = false;
 let closestGPXPoint;
-let currentDistance = 0;
 
 async function getPoints() {
     console.log("getpoints");
@@ -63,24 +62,14 @@ async function getPoints() {
 
 function getClosestGPXPoint() {
     closestGPXPoint = null;
-    if (plannedPoints.length == 0 || !lastMessage)
+    if (plannedPoints.length > 0 || !lastMessage)
         return;
 
-    console.log("calculating closest point");
-
+    console.log("getting closest gpx point to marker");
     let closestD = Infinity;
-    for(const planned of plannedPoints){
-        let dist = map.distance(planned, lastMessage) / 1000;
-        if(dist < closestD){
-            closestD = dist;
-            closestGPXPoint = planned;
-        }
+    for(let i = 0; i < plannedPoints.length; i++){
+        let d =
     }
-
-    console.log("closestD: " + closestD + " distance " + closestGPXPoint.meta.distance);
-    currentDistance = closestGPXPoint.meta.distance;
-    if(elevationPlot)
-    	elevationPlot.updatePosition(currentDistance);
 }
 
 setInterval(getPoints, 1000 * 60 * 2);
@@ -144,7 +133,8 @@ function drawOverlay() {
 
 let messageMarkerLayer = L.layerGroup();
 let layerControls = L.control.layers(null, { 'Messages': messageMarkerLayer }).addTo(map);
-let elevationPlot;
+let plannedDistance = 0;
+let elevationChart;
 
 plannedRoute = new L.GPX('planned.gpx', {
     async: true,
@@ -187,8 +177,8 @@ plannedRoute = new L.GPX('planned.gpx', {
         plannedPoints[i].meta.distance = elevationDataAll[i][0]
     }
     console.log(plannedPoints[57]);
-    elevationPlot = new ElevationPlotter(document.getElementById("elevationContainer"), plannedPoints);
     getClosestGPXPoint();
+    makeElevationChart(elevationDataAll);
 }).addTo(map);
 layerControls.addOverlay(plannedRoute, "Planned Route");
 
@@ -204,4 +194,91 @@ elevationSlude.setContents(`<div id="elevationContainer"></div>`);
 
 getPoints();
 
+function makeElevationChart(data) {
+    console.log("makeElevationChart");
 
+    const elevationContainer = document.getElementById("elevationContainer");
+
+    const width = parseInt(d3.select("#elevationContainer").style("width"),10);
+    const height = 160;// parseInt(d3.select("#elevationContainer").style("height"),10)
+
+    const marginTop = 20;
+    const marginRight = 20;
+    const marginBottom = 30;
+    const marginLeft = 40;
+
+    // Declare the x (horizontal position) scale.
+    const x = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d[0])])
+        .range([marginLeft, width - marginRight])
+        .nice();
+    
+    // Declare the y (vertical position) scale.
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d[1])])
+        .range([height - marginBottom, marginTop]);
+
+    // Create the horizontal axis generator, called at startup and when zooming.
+    const xAxis = (g, x) => g
+        .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0))
+
+    // Declare the area generator.
+    const area = (data, x) => d3.area()
+          .curve(d3.curveStepAfter)
+          .x(d => x(d[0]))
+          .y0(y(0))
+          .y1(d => y(d[1]))
+        (data);
+
+    // Create the zoom behavior.
+      const zoom = d3.zoom()
+          .scaleExtent([1, 32])
+          .extent([[marginLeft, 0], [width - marginRight, height]])
+          .translateExtent([[marginLeft, -Infinity], [width - marginRight, Infinity]])
+          .on("zoom", zoomed);
+    
+    // Create the SVG container.
+    const svg = d3.create("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    // Create a clip-path with a unique ID.
+      //const clip = DOM.uid("clip");
+
+      svg.append("clipPath")
+          .attr("id", "clip-path-0")
+        .append("rect")
+          .attr("x", marginLeft)
+          .attr("y", marginTop)
+          .attr("width", width - marginLeft - marginRight)
+          .attr("height", height - marginTop - marginBottom);
+
+    const path = svg.append("path")
+      .attr("clip-path", "clip-path-0")
+      .attr("fill", "#ff0000aa")
+      .attr("d", area(data, x));
+
+    // Add the x-axis.
+    const gx = svg.append("g")
+        .attr("transform", `translate(0,${height - marginBottom})`)
+        .call(xAxis, x);
+    
+    // Add the y-axis.
+    svg.append("g")
+        .attr("transform", `translate(${marginLeft},0)`)
+        .call(d3.axisLeft(y).ticks(5));
+
+    function zoomed(event) {
+        const xz = event.transform.rescaleX(x);
+        path.attr("d", area(data, xz));
+        gx.call(xAxis, xz);
+      }
+    
+    // Append the SVG element.
+    elevationContainer.append(svg.node());
+
+    svg.call(zoom)
+        //.transition()
+      //.duration(750)
+      //.call(zoom.scaleTo, 4, [100, 0]);
+}
