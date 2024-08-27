@@ -34,7 +34,7 @@ function updatePoints(data) {
             messageData.push(JSON.parse(JSON.stringify(msg)))
         }
     }
-    lastMessage = latlongs.at(-1).at(-1);
+    lastMessage = latlongs.at(0).at(-1);
     console.log(lastMessage);
 }
 
