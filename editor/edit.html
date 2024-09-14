@@ -41,11 +41,88 @@
 
             </div>
         </div>
+
+        <div class="card mt-4">
+            <div class="card-header">Stops</div>
+            <div class="card-body">
+                <div id="stops-list" class="mt-4" style="flex-direction: column;">
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+
+        const stopTime = 4 * 60 * 60;
+        let messages = [];
+
+        async function getMessages() {
+            let res;
+            try {
+                res = await fetch('/all_messages');
+            } catch (error) {
+                addAlert('error', error);
+                return;
+            }
+
+            try {
+                messages = await res.json();
+            } catch (error) {
+                addAlert('error', error);
+                return;
+            }
+
+            addAlert('success', "all messages fetched");
+            filterMessages();
+        }
+
+        const pointTypes = [
+            '',
+            'hotel',
+            'bnb',
+            'hostel',
+            'hosted',
+            'camping-campsite',
+            'camping-wild',
+        ];
+
+        function filterMessages() {
+	    let html = []
+	    const now = Date.now() / 1000;
+            for (let i = 0; i < messages.length; i++) {
+                const msg = messages[i];
+                let nextTime = now;
+                if (i > 0)
+                    nextTime = messages[i-1].unixTime;
+
+                if (nextTime - msg.unixTime < stopTime)
+                    continue;
+
+                let dropdown = `<select name="pointType">`;
+                for (const pointType of pointTypes) {
+                    const selected = pointType === msg.pointType ? 'selected' : '';
+                    dropdown += `<option value=${pointType} ${selected}>${pointType}</option>`
+                }
+                dropdown += `</select>`;
+
+                let dateString = new Date(msg.unixTime * 1000).toLocaleString();
+                let row =
+                    `<div class="card m-1">` +
+                    `<p>${dateString}: ${msg.pointType} ` +
+                    `<a href="https://maps.google.com/?q=${msg.latitude},${msg.longitude}" target="_blank" rel="noopener noreferrer">google maps</a>` +
+                    `<form action="/update_point" method="POST">` +
+                    dropdown +
+                    `<textarea name="pointDetails" cols="30" rows="2">${msg.pointDetails ? msg.pointDetails : ''}</textarea>`  +
+                    `<button type="submit" class="btn btn-primary" name="messageId" value="${msg.id}">update</button>` +
+                    `</form>` +
+                    `</p>` +
+                    `</div>`;
+                html.push(row);
+            }
+            document.querySelector('#stops-list').innerHTML = html.join('\n');
+        }
 
         // get all uploaded images
         async function getPhotos() {
@@ -71,11 +148,10 @@
         }
 
         // window.onload(() => getPhotos());
-        getPhotos();
 
-        function addAlert(message, type) {
-            const alertPlaceholder = document.getElementById('liveAlertPlaceholder')
-            const wrapper = document.createElement('div')
+        function addAlert(type, message) {
+            const alertPlaceholder = document.getElementById('liveAlertPlaceholder');
+            const wrapper = document.createElement('div');
             wrapper.innerHTML = [
                 `<div class="alert alert-${type} alert-dismissible" role="alert">`,
                 `   <div>${message}</div>`,
@@ -96,7 +172,10 @@
 
         socket.on('error', (msg) => {
             addAlert('danger', msg);
-        })
+        });
+
+        getMessages();
+        getPhotos();
 
     </script>
 

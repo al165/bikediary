@@ -14,17 +14,17 @@ function updatePoints(data) {
     for (const msg of data) {
     	// should only apply to ULIMITED-TRACK messages
         const latlong = [msg['latitude'], msg['longitude']];
-        if (msg['unixTime'] < lastUnixTime - 24 * 60 * 60) {
-            // split line
-            if (lastLatLong) {
-                jumps.push([
-                    latlong,
-                    lastLatLong
-                ]);
-            }
-            latlongs.push([]);
-            currLine++;
-        }
+        //if (msg['unixTime'] < lastUnixTime - 24 * 60 * 60) {
+        //    // split line
+        //    if (lastLatLong) {
+        //        jumps.push([
+        //            latlong,
+        //            lastLatLong
+        //        ]);
+        //    }
+        //    latlongs.push([]);
+        //    currLine++;
+        //}
         msg.lat = msg.latitude;
         msg.lng = msg.longitude;
         latlongs[currLine].unshift(msg);
@@ -32,6 +32,10 @@ function updatePoints(data) {
         lastLatLong = latlong.slice();
         if (msg['messageType'] != "UNLIMITED-TRACK") {
             messageData.push(JSON.parse(JSON.stringify(msg)))
+        }
+
+        if (msg['pointType']) {
+            stops.push(msg);
         }
     }
     lastMessage = latlongs.at(0).at(-1);
@@ -44,6 +48,7 @@ let currLine = 0;
 let lastUnixTime = 0;
 let lastLatLong;
 let messageData = [];
+let stops = [];
 let polyline;
 let currentMarker;
 let plannedRoute;
@@ -92,12 +97,41 @@ function drawOverlay() {
     polyline = L.polyline(latlongs,
         {
             color: 'blue',
-            weight: 2,
-            smoothFactor: 3,
-        }).arrowheads({
-            frequency: '50px',
-            size: '12px'
+            weight: 2.5,
+            smoothFactor: 2,
+        //}).arrowheads({
+        //    frequency: '50px',
+        //    size: '12px'
         }).addTo(map);
+
+    // const geodesic = new L.Geodesic(jumps, { color: 'blue', opacity: 0.5, dashArray: '8', weight: 2 }).arrowheads({ size: '12px', dashArray: '0' }).addTo(map);
+
+    for (const msg of messageData) {
+        const latlong = L.latLng(msg['latitude'], msg['longitude']);
+        const marker = L.marker(latlong, {
+            icon: new L.BeautifyIcon.icon({
+                iconShape: 'circle-dot',
+                borderWidth: 4
+            })
+        }).addTo(messageMarkerLayer);
+        marker.bindPopup(`<b>${msg['messageType']}</b><p>${msg['messageContent']}</p>`);
+        marker.bindTooltip(`Message: ${msg['messageType']}`);
+    }
+    messageMarkerLayer.addTo(map);
+
+    for (const stop of stops) {
+        const marker = L.marker(stop, {
+            icon: new L.BeautifyIcon.icon({
+                iconShape: 'circle-dot',
+                iconSize: [11, 11],
+                iconAnchor: [5, 5],
+                borderWidth: 4,
+                borderColor: 'blue',
+            })
+        }).addTo(stopMarkerLayer);
+        marker.bindPopup(`<p><b>Stop: </b>${stop.pointType}</p><p>${stop.pointDetails}</p>`);
+    }
+    stopMarkerLayer.addTo(map); 
 
     if (lastMessage) {
         if (currentMarker)
@@ -127,23 +161,11 @@ function drawOverlay() {
 
         getClosestGPXPoint();
     }
-    const geodesic = new L.Geodesic(jumps, { color: 'blue', opacity: 0.5, dashArray: '8', weight: 2 }).arrowheads({ size: '12px', dashArray: '0' }).addTo(map);
-    for (const msg of messageData) {
-        const latlong = L.latLng(msg['latitude'], msg['longitude']);
-        const marker = L.marker(latlong, {
-            icon: new L.BeautifyIcon.icon({
-                iconShape: 'circle-dot',
-                borderWidth: 4
-            })
-        }).addTo(messageMarkerLayer);
-        marker.bindPopup(`<b>${msg['messageType']}</b><p>${msg['messageContent']}</p>`);
-        marker.bindTooltip(`Message: ${msg['messageType']}`);
-    }
-    messageMarkerLayer.addTo(map);
 }
 
 let messageMarkerLayer = L.layerGroup();
-let layerControls = L.control.layers(null, { 'Messages': messageMarkerLayer }).addTo(map);
+let stopMarkerLayer = L.layerGroup();
+let layerControls = L.control.layers(null, { 'Stops': stopMarkerLayer }).addTo(map);
 let elevationPlot;
 
 plannedRoute = new L.GPX('planned.gpx', {

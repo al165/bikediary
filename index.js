@@ -39,7 +39,9 @@ db.run("CREATE TABLE IF NOT EXISTS Messages (" +
     "longitude REAL, " +
     "altitude REAL, " +
     "batteryState TEXT, " +
-    "messageContent TEXT" +
+    "messageContent TEXT, " +
+    "pointType TEXT, " +
+    "pointDetails TEXT" +
     ")",
     function (err) {
         if (err)
@@ -98,7 +100,7 @@ function allDataFetched() {
         } else if (row) {
             latestUnixTime = row.maxUnixTime;
             console.log("latestUnixTime: " + latestUnixTime);
-            unixTimeToDate(latestUnixTime);
+            //unixTimeToDate(latestUnixTime);
 
             try {
                 writeFileSync('./cache.json', JSON.stringify({ latestUnixTime: latestUnixTime, lastRequestTime: lastRequestTime }), 'utf-8');
@@ -122,12 +124,20 @@ async function fetchSpotData(start) {
     const API_URL = "https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/" + process.env.SPOT_API_KEY + "/message.json";
     console.log(`API_URL: ${API_URL}`);
 
-    const res = await fetch(API_URL + `?start=${start}&startDate=${startDate}`);
-    let data;
+    let data, res;
+    try {
+        res = await fetch(API_URL + `?start=${start}&startDate=${startDate}`);
+    } catch (error) {
+        console.log(error.message);
+        allDataFetched();
+        return;
+    }
+
     try {
 	data = await res.json();
     } catch (error) {
-        console.log(error);
+        console.log(error.message);
+        allDataFetched();
         return;
     }
 
@@ -137,7 +147,7 @@ async function fetchSpotData(start) {
     }
 
     const dataKeys = [
-        'id', 'unixTime', 'messageType', 'latitude', 'longitude', 'altitude', 'batteryState', 'messageContent'
+        'id', 'unixTime', 'messageType', 'latitude', 'longitude', 'altitude', 'batteryState', 'messageContent', 'pointType', 'pointDetails'
     ];
 
     let placeholders = dataKeys.map((key) => '?').join(', ');
@@ -179,6 +189,7 @@ app.use(session({
 app.use(json());
 
 app.get('/edit', checkLogin, function (req, res) {
+    console.log('/edit');
     res.sendFile(join(__dirname, 'editor', 'edit.html'));
 });
 
@@ -269,11 +280,32 @@ app.post('/remove_photo', function (req, res) {
     });
 });
 
+app.post('/update_point', function (req, res) {
+    console.log('/update_point');
+    console.log(req.body);
+    const id = parseInt(req.body.messageId);
+    const { pointType, pointDetails } = req.body;
+
+    db.run("UPDATE Messages SET pointType = ?, pointDetails = ? WHERE id = ?", [pointType, pointDetails, id], function(err) {
+        if (err) {
+            io.emit("error", err.message);
+            console.error(err.message);
+        } else {
+            io.emit("success", "point updated");
+            console.log(`Point ${id} updated`);
+        }
+
+        res.sendStatus(204);
+        return
+    });
+});
+
 app.get('/planned.gpx', function (req, res) {
     res.sendFile(join(__dirname, 'uploads', 'planned.gpx'));
 });
 
 app.get('/all_messages', function (req, res) {
+    console.log('/all_messages');
     if (Date.now() - lastRequestTime > 5 * 60 * 1000)
         fetchSpotData(0);
 
