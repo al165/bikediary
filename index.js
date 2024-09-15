@@ -189,7 +189,6 @@ app.use(session({
 app.use(json());
 
 app.get('/edit', checkLogin, function (req, res) {
-    console.log('/edit');
     res.sendFile(join(__dirname, 'editor', 'edit.html'));
 });
 
