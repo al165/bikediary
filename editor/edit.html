@@ -97,7 +97,7 @@
                 if (i > 0)
                     nextTime = messages[i-1].unixTime;
 
-                if (nextTime - msg.unixTime < stopTime)
+                if (nextTime - msg.unixTime < stopTime && i > 0)
                     continue;
 
                 let dropdown = `<select name="pointType">`;
@@ -107,10 +107,11 @@
                 }
                 dropdown += `</select>`;
 
+                let latest = i == 0 ? '(latest)' : '';
                 let dateString = new Date(msg.unixTime * 1000).toLocaleString();
                 let row =
                     `<div class="card m-1">` +
-                    `<p>${dateString}: ${msg.pointType} ` +
+                    `<p>${dateString}: ${msg.pointType} ${latest} ` +
                     `<a href="https://maps.google.com/?q=${msg.latitude},${msg.longitude}" target="_blank" rel="noopener noreferrer">google maps</a>` +
                     `<form action="/update_point" method="POST">` +
                     dropdown +
