@@ -97,7 +97,7 @@
                 if (i > 0)
                     nextTime = messages[i-1].unixTime;
 
-                if (nextTime - msg.unixTime < stopTime && i > 0)
+                if (nextTime - msg.unixTime < stopTime && i > 0 && !msg.pointType)
                     continue;
 
                 let dropdown = `<select name="pointType">`;

@@ -2,6 +2,15 @@ import { ElevationPlotter } from './plotter.js';
 
 let map = L.map('map').setView([50.0469811, 19.9223924], 5);
 
+const stopTypeNames = {
+    'bnb': 'BnB',
+    'hotel': 'Hotel',
+    'hostel': 'Hostel',
+    'hosted': 'Hosted',
+    'camping-wild': 'Wild Camp',
+    'camping-campsite': 'Campsite'
+};
+
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -129,7 +138,8 @@ function drawOverlay() {
                 borderColor: 'blue',
             })
         }).addTo(stopMarkerLayer);
-        marker.bindPopup(`<p><b>Stop: </b>${stop.pointType}</p><p>${stop.pointDetails}</p>`);
+        const stopString = stopTypeNames[stop.pointType];
+        marker.bindPopup(`<p><b>${stopString}</b></p><p>${stop.pointDetails}</p>`);
     }
     stopMarkerLayer.addTo(map); 
 
