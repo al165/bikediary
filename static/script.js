@@ -224,15 +224,27 @@ plannedRoute = new L.GPX('planned.gpx', {
 }).addTo(map);
 layerControls.addOverlay(plannedRoute, "Planned Route");
 
-const elevationSlude = L.control.slideMenu("elevation data here soon!", {
+const elevationSlide = L.control.slideMenu("elevation data here soon!", {
   position: "topleft",
   menuPosition: "bottomleft",
   width: "100%",
-  height: "30%",
+  height: "40%",
   direction: "vertical",
   icon: "fa fa-line-chart"
 }).addTo(map);
-elevationSlude.setContents(`<div id="elevationContainer"></div>`);
+elevationSlide.setContents(`<h3>Elevation profile of planned route</h3><div id="elevationContainer"></div>`);
+
+const stravaEmbed = `
+<iframe height='454' width='300' frameborder='0' allowtransparency='true' scrolling='no' src='https://www.strava.com/athletes/3904627/latest-rides/94f4562082905ad6135ce5aef63fbf508beb141b'></iframe>
+`
+const stravaSlide = L.control.slideMenu(stravaEmbed, {
+    position: "topleft",
+    menuPosition: "bottomleft",
+    width: "320px",
+    height: "520px",
+    direction: "horizontal",
+    icon: "fa fa-info-circle"
+}).addTo(map);
 
 getPoints();
 
