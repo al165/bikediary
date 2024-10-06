@@ -22,6 +22,9 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server);
 
+import countryIso from 'country-iso';
+import countries from 'i18n-iso-countries';
+
 config({ path: './.env' });
 
 const db = new sqlite3.Database(`./db/${process.env.DATABASE}.db`, (error) => {
@@ -41,7 +44,8 @@ db.run("CREATE TABLE IF NOT EXISTS Messages (" +
     "batteryState TEXT, " +
     "messageContent TEXT, " +
     "pointType TEXT, " +
-    "pointDetails TEXT" +
+    "pointDetails TEXT, " +
+    "countryCode TEXT" +
     ")",
     function (err) {
         if (err)
@@ -331,6 +335,32 @@ app.get('/all_photos', function (req, res) {
     })
 });
 
+app.get('/country/:lat/:lng', function (req, res) {
+    const { lat, lng } = req.params;
+    if(!lat || !lng) {
+        res.json([]);
+        return;
+    }
+
+    try {
+        const iso3166 = countryIso.get(parseFloat(lat), parseFloat(lng));
+        let iso3166alpha2 = countries.alpha3ToAlpha2(iso3166[0]);
+        let name = countries.getName(iso3166[0], "en");
+        if(!name) {
+            if(iso3166[0] == 'XKX') {
+                name = 'Kosovo';
+                iso3166alpha2 = "XK";
+            } else
+                name = 'Unknown';
+        }
+        const emoji = getFlagEmoji(iso3166alpha2);
+        res.json({name: name, code: iso3166, alpha2: iso3166alpha2, emoji: emoji});
+    } catch (err) {
+        console.error(err);
+        res.json([]);
+    }
+});
+
 app.use('/photos/thumb', express.static(join(__dirname, 'uploads', 'images', '.thumbs')));
 app.use('/photos', express.static(join(__dirname, 'uploads', 'images')));
 
@@ -360,3 +390,15 @@ server.listen(process.env.EXPRESS_PORT, () => {
         fetchSpotData(0);
 
 });
+
+
+function getFlagEmoji(countryCode) {
+  if (!countryCode)
+      return '';
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char =>  127397 + char.charCodeAt());
+  return String.fromCodePoint(...codePoints);
+}
+

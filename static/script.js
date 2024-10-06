@@ -34,7 +34,7 @@ function updatePoints(data) {
     currLine = 0;
     for (const msg of data) {
     	// should only apply to ULIMITED-TRACK messages
-        const latlong = [msg['latitude'], msg['longitude']];
+        // const latlong = [msg['latitude'], msg['longitude']];
         //if (msg['unixTime'] < lastUnixTime - 24 * 60 * 60) {
         //    // split line
         //    if (lastLatLong) {
@@ -50,7 +50,7 @@ function updatePoints(data) {
         msg.lng = msg.longitude;
         latlongs[currLine].unshift(msg);
         lastUnixTime = msg['unixTime'];
-        lastLatLong = latlong.slice();
+        // lastLatLong = latlong.slice();
         if (msg['messageType'] != "UNLIMITED-TRACK") {
             messageData.push(JSON.parse(JSON.stringify(msg)))
         }
@@ -109,7 +109,7 @@ function getClosestGPXPoint() {
     	elevationPlot.updatePosition(currentDistance);
 }
 
-setInterval(getPoints, 1000 * 60 * 2);
+// setInterval(getPoints, 1000 * 60 * 2);
 
 const trackColour = '#4141E7';
 
@@ -174,15 +174,32 @@ function drawOverlay() {
                 customClasses: "blinking",
             })
         }).addTo(map);
+
         const updateSince = moment.unix(lastMessage.unixTime).fromNow();
-        currentMarker.bindPopup(`
-        <b>Current position</b><br>
-        <a href="https://maps.google.com/?q=${lastMessage.lat},${lastMessage.lng}" target="_blank" rel="noopener noreferrer">view on Google Maps</a>
-        <p>Last update: ${updateSince}.</p>
-        <p>Tracker battery status: ${lastMessage.batteryState.toLowerCase()}</p>
-        `);
+
+        currentMarker.bindPopup(
+	    function(target) {
+		const popup = target.getPopup();
+		const countryDataURL = `/country/${lastMessage.lat}/${lastMessage.lng}`;
+		console.log(countryDataURL);
+		fetch(countryDataURL)
+		.then(res => res.json())
+		.then(data => {
+                    popup.setContent(`
+                    <b>Current position</b><br>
+                    ${data.emoji} ${data.name}<br>
+                    <a href="https://maps.google.com/?q=${lastMessage.lat},${lastMessage.lng}" target="_blank" rel="noopener noreferrer">[view on Google Maps]</a>
+                    <p>Last update: ${updateSince}.</p>
+                    <p>Tracker battery status: ${lastMessage.batteryState.toLowerCase()}</p>
+                    `)
+
+    		});
+    		return "Loading...";
+	    }
+        );
+
         if (!loaded) {
-            map.setView(currentMarker.getLatLng(), 11);
+            map.setView(currentMarker.getLatLng(), 10);
             loaded = true;
         }
 
