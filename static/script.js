@@ -1,6 +1,5 @@
 import { ElevationPlotter } from './plotter.js';
 
-let map = L.map('map').setView([50.0469811, 19.9223924], 5);
 
 const stopTypeNames = {
     'bnb': 'BnB',
@@ -11,9 +10,22 @@ const stopTypeNames = {
     'camping-campsite': 'Campsite'
 };
 
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+// API Key only allows requests from arranlyon.com
+const key = 'vWoMg6UEoZfSTtgtX14E';
+
+let map = L.map('map').setView([50.0469811, 19.9223924], 5);
+const mtLayer = L.maptilerLayer({
+    apiKey: key,
+    style: L.MaptilerStyle.STREETS, // optional
+}).addTo(map);
+//L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+//    maxZoom: 19,
+//    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+//}).addTo(map);
+
+L.control.locate(
+{
+    position: 'topleft',
 }).addTo(map);
 
 function updatePoints(data) {
@@ -99,14 +111,16 @@ function getClosestGPXPoint() {
 
 setInterval(getPoints, 1000 * 60 * 2);
 
+const trackColour = '#4141E7';
+
 function drawOverlay() {
     if (polyline) {
         polyline.remove(map);
     }
     polyline = L.polyline(latlongs,
         {
-            color: 'blue',
-            weight: 2.5,
+            color: trackColour,
+            weight: 3,
             smoothFactor: 2,
         //}).arrowheads({
         //    frequency: '50px',
@@ -135,7 +149,7 @@ function drawOverlay() {
                 iconSize: [11, 11],
                 iconAnchor: [5, 5],
                 borderWidth: 4,
-                borderColor: 'blue',
+                borderColor: trackColour,
             })
         }).addTo(stopMarkerLayer);
         const stopString = stopTypeNames[stop.pointType];
@@ -149,12 +163,15 @@ function drawOverlay() {
 
         currentMarker = L.marker(lastMessage, {
             icon: new L.BeautifyIcon.icon({
-                iconShape: 'marker',
-                borderWidth: 4,
-                borderColor: "blue",
+                iconShape: 'circle-dot',
+                iconSize: [22, 22],
+                iconAnchor: [11, 11],
+                borderWidth: 6,
+                borderColor: trackColour,
                 icon: null,
                 text: "",
-                textColor: "blue",
+                textColor: trackColour,
+                customClasses: "blinking",
             })
         }).addTo(map);
         const updateTime = new Date(lastMessage.unixTime * 1000);

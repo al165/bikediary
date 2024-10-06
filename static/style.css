@@ -18,3 +18,11 @@ html, body, #map {
     top: 0;
     right: 0;
 }
+
+@keyframes fade { 
+  from { opacity: 0.5; } 
+}
+
+.blinking {
+  animation: fade 1s infinite alternate;
+}
