@@ -174,11 +174,11 @@ function drawOverlay() {
                 customClasses: "blinking",
             })
         }).addTo(map);
-        const updateTime = new Date(lastMessage.unixTime * 1000);
+        const updateSince = moment.unix(lastMessage.unixTime).fromNow();
         currentMarker.bindPopup(`
         <b>Current position</b><br>
         <a href="https://maps.google.com/?q=${lastMessage.lat},${lastMessage.lng}" target="_blank" rel="noopener noreferrer">view on Google Maps</a>
-        <p>Last message time: ${updateTime.toString()}</p>
+        <p>Last update: ${updateSince}.</p>
         <p>Tracker battery status: ${lastMessage.batteryState.toLowerCase()}</p>
         `);
         if (!loaded) {

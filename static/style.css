@@ -20,9 +20,14 @@ html, body, #map {
 }
 
 @keyframes fade { 
-  from { opacity: 0.5; } 
+  0% {
+      box-shadow: 0 0 0px 1px rgba(0, 0, 255, 1.0);
+  }
+  50% {
+      box-shadow: 0 0 0px 18px rgba(0, 0, 255, 0.0);
+  }
 }
 
 .blinking {
-  animation: fade 1s infinite alternate;
+  animation: fade 1.8s infinite ease-out;
 }
