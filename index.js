@@ -45,7 +45,8 @@ db.run("CREATE TABLE IF NOT EXISTS Messages (" +
     "messageContent TEXT, " +
     "pointType TEXT, " +
     "pointDetails TEXT, " +
-    "countryCode TEXT" +
+    "countryCode TEXT, " +
+    "ignore INTEGER" +
     ")",
     function (err) {
         if (err)
@@ -81,8 +82,6 @@ function unixTimeToDate(unix) {
     const seconds = String(date.getUTCSeconds()).padStart(2, '0');
 
     const datetimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}-0000`;
-
-    console.log('unixTimeToData: ' + unix + ' -> ' + datetimeString);
 
     return datetimeString;
 }
@@ -151,7 +150,18 @@ async function fetchSpotData(start) {
     }
 
     const dataKeys = [
-        'id', 'unixTime', 'messageType', 'latitude', 'longitude', 'altitude', 'batteryState', 'messageContent', 'pointType', 'pointDetails'
+        'id',
+        'unixTime',
+        'messageType',
+        'latitude',
+        'longitude',
+        'altitude',
+        'batteryState',
+        'messageContent',
+        'pointType',
+        'pointDetails',
+        'countryCode',
+        'ignore',
     ];
 
     let placeholders = dataKeys.map((key) => '?').join(', ');
@@ -301,6 +311,44 @@ app.post('/update_point', function (req, res) {
         res.sendStatus(204);
         return
     });
+});
+
+app.get('/ignore_list', function (req, res) {
+    db.all("SELECT * FROM Messages WHERE ignore > 0", [], function (err, rows) {
+        if (err) {
+            io.emit("error", err.message);
+            console.log(err);
+        }
+
+        res.json(rows);
+    })
+});
+
+app.post('/update_ignore_list', function (req, res) {
+    const list = req.body.ignoreList.split(',').map((x) => parseInt(x));
+    console.log(list);
+
+    db.run("UPDATE Messages SET ignore = ?", [0], function (err) {
+        if (err) {
+            io.emit("error", err.message);
+            console.log(err);
+        }
+
+        let placeholders = list.map((key) => '?').join(', ');
+        let query = `UPDATE Messages SET ignore = 1 WHERE id IN (${placeholders})`;
+        console.log(query);
+
+        db.run(query, list, function (err) {
+            if (err) {
+                io.emit("error", err.message);
+                console.log(err);
+            }
+
+            res.sendStatus(204);
+        });
+        
+    });
+    
 });
 
 app.get('/planned.gpx', function (req, res) {

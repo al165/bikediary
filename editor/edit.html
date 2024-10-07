@@ -43,6 +43,19 @@
         </div>
 
         <div class="card mt-4">
+            <div class="card-header">Ignore points</div>
+            <div class="card-body">
+                <div class="card-text">Comma separated list of point IDs to ignore whem displaying track data</div>
+                <form action="/update_ignore_list" method="POST">
+                    <div class="mb-3">
+                        <textarea id="ignoreList" name="ignoreList" cols="30" rows="2"></textarea>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
             <div class="card-header">Stops</div>
             <div class="card-body">
                 <div id="stops-list" class="mt-4" style="flex-direction: column;">
@@ -148,6 +161,14 @@
             document.querySelector("#photo-list").innerHTML = html.join('\n');
         }
 
+        async function getIgnoreList() {
+            const res = await fetch('/ignore_list');
+            const messages = await res.json();
+
+            const list = messages.map((m) => m.id).join(', ');
+            document.querySelector('#ignoreList').value = list;
+        }
+
         // window.onload(() => getPhotos());
 
         function addAlert(type, message) {
@@ -177,6 +198,7 @@
 
         getMessages();
         getPhotos();
+        getIgnoreList();
 
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>

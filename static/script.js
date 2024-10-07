@@ -28,11 +28,19 @@ L.control.locate(
     position: 'topleft',
 }).addTo(map);
 
+let messageMarkerLayer = L.layerGroup();
+let stopMarkerLayer = L.layerGroup();
+let allMessagePointsLayer = L.layerGroup();
+let layerControls = L.control.layers(null, { 'Stops': stopMarkerLayer, 'All points': allMessagePointsLayer }).addTo(map);
+let elevationPlot;
+
 function updatePoints(data) {
     // TODO: incremental updates
     latlongs = [[]];
     currLine = 0;
     for (const msg of data) {
+        if (msg.ignore)
+            continue;
     	// should only apply to ULIMITED-TRACK messages
         // const latlong = [msg['latitude'], msg['longitude']];
         //if (msg['unixTime'] < lastUnixTime - 24 * 60 * 60) {
@@ -80,7 +88,6 @@ let closestGPXPoint;
 let currentDistance = 0;
 
 async function getPoints() {
-    console.log("getpoints");
     const res = await fetch("/all_messages");
     const data = await res.json();
     updatePoints(data);
@@ -127,6 +134,20 @@ function drawOverlay() {
         //    size: '12px'
         }).addTo(map);
 
+    for (const msg of latlongs[0]) {
+        console.log(msg);
+        const marker = L.marker(msg, {
+           icon: new L.BeautifyIcon.icon({
+               iconShape: 'circle-dot',
+               borderColor: trackColour,
+               iconSize: [7, 7],
+               iconAnchor: [3, 3]
+           })
+        }).addTo(allMessagePointsLayer);
+        marker.bindPopup(JSON.stringify(msg, null, 2));
+    }
+    //allMessagePointsLayer.addTo(map);
+
     // const geodesic = new L.Geodesic(jumps, { color: 'blue', opacity: 0.5, dashArray: '8', weight: 2 }).arrowheads({ size: '12px', dashArray: '0' }).addTo(map);
 
     for (const msg of messageData) {
@@ -141,21 +162,6 @@ function drawOverlay() {
         marker.bindTooltip(`Message: ${msg['messageType']}`);
     }
     messageMarkerLayer.addTo(map);
-
-    for (const stop of stops) {
-        const marker = L.marker(stop, {
-            icon: new L.BeautifyIcon.icon({
-                iconShape: 'circle-dot',
-                iconSize: [11, 11],
-                iconAnchor: [5, 5],
-                borderWidth: 4,
-                borderColor: trackColour,
-            })
-        }).addTo(stopMarkerLayer);
-        const stopString = stopTypeNames[stop.pointType];
-        marker.bindPopup(`<p><b>${stopString}</b></p><p>${stop.pointDetails}</p>`);
-    }
-    stopMarkerLayer.addTo(map); 
 
     if (lastMessage) {
         if (currentMarker)
@@ -205,12 +211,23 @@ function drawOverlay() {
 
         getClosestGPXPoint();
     }
-}
 
-let messageMarkerLayer = L.layerGroup();
-let stopMarkerLayer = L.layerGroup();
-let layerControls = L.control.layers(null, { 'Stops': stopMarkerLayer }).addTo(map);
-let elevationPlot;
+
+    for (const stop of stops) {
+        const marker = L.marker(stop, {
+            icon: new L.BeautifyIcon.icon({
+                iconShape: 'circle-dot',
+                iconSize: [11, 11],
+                iconAnchor: [5, 5],
+                borderWidth: 4,
+                borderColor: trackColour,
+            })
+        }).addTo(stopMarkerLayer);
+        const stopString = stopTypeNames[stop.pointType];
+        marker.bindPopup(`<p><b>${stopString}</b></p><p>${stop.pointDetails}</p>`);
+    }
+    stopMarkerLayer.addTo(map); 
+}
 
 plannedRoute = new L.GPX('planned.gpx', {
     async: true,
