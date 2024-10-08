@@ -27,6 +27,11 @@ L.control.locate({
     position: 'topleft',
 }).addTo(map);
 
+L.control.scale({
+    position: 'bottomright',
+    maxWidth: 150,
+}).addTo(map);
+
 let messageMarkerLayer = L.layerGroup();
 let stopMarkerLayer = L.layerGroup();
 let allMessagePointsLayer = L.layerGroup();
