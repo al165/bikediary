@@ -167,6 +167,18 @@ function drawOverlay() {
         if (currentMarker)
             currentMarker.remove(map);
 
+        const updateSince = moment.unix(lastMessage.unixTime).fromNow();
+        let stopInfo = '';
+        let stopped = false;
+
+	// should also check if distance to last stop is less than
+	// 100m, in case tracker is left on
+        if (lastMessage['pointType']) {
+            const stopString = stopTypeNames[lastMessage.pointType];
+            stopInfo = `<b>Stopped: ${stopString}</b><br>${lastMessage.pointDetails}</p>`;
+            stopped = true;
+        }
+
         currentMarker = L.marker(lastMessage, {
             icon: new L.BeautifyIcon.icon({
                 iconShape: 'circle-dot',
@@ -177,11 +189,9 @@ function drawOverlay() {
                 icon: null,
                 text: "",
                 textColor: trackColour,
-                customClasses: "blinking",
+                customClasses: stopped ? "" : "blinking",
             })
         }).addTo(map);
-
-        const updateSince = moment.unix(lastMessage.unixTime).fromNow();
 
         currentMarker.bindPopup(
 	    function(target) {
@@ -197,6 +207,7 @@ function drawOverlay() {
                     <a href="https://maps.google.com/?q=${lastMessage.lat},${lastMessage.lng}" target="_blank" rel="noopener noreferrer">[view on Google Maps]</a>
                     <p>Last update: ${updateSince}.</p>
                     <p>Tracker battery status: ${lastMessage.batteryState.toLowerCase()}</p>
+                    ${stopInfo}
                     `)
 
     		});
@@ -214,6 +225,9 @@ function drawOverlay() {
 
 
     for (const stop of stops) {
+        if (stop.id == lastMessage.id)
+            continue;
+
         const marker = L.marker(stop, {
             icon: new L.BeautifyIcon.icon({
                 iconShape: 'circle-dot',
@@ -224,7 +238,7 @@ function drawOverlay() {
             })
         }).addTo(stopMarkerLayer);
         const stopString = stopTypeNames[stop.pointType];
-        marker.bindPopup(`<p><b>${stopString}</b></p><p>${stop.pointDetails}</p>`);
+        marker.bindPopup(`<b>${stopString}</b><br>${stop.pointDetails}`);
     }
     stopMarkerLayer.addTo(map); 
 }
