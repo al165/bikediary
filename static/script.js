@@ -23,8 +23,7 @@ const mtLayer = L.maptilerLayer({
 //    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 //}).addTo(map);
 
-L.control.locate(
-{
+L.control.locate({
     position: 'topleft',
 }).addTo(map);
 
@@ -34,6 +33,8 @@ let allMessagePointsLayer = L.layerGroup();
 let layerControls = L.control.layers(null, { 'Stops': stopMarkerLayer, 'All points': allMessagePointsLayer }).addTo(map);
 let elevationPlot;
 
+const trackColour = '#4141E7';
+
 function updatePoints(data) {
     // TODO: incremental updates
     latlongs = [[]];
@@ -41,24 +42,12 @@ function updatePoints(data) {
     for (const msg of data) {
         if (msg.ignore)
             continue;
-    	// should only apply to ULIMITED-TRACK messages
-        // const latlong = [msg['latitude'], msg['longitude']];
-        //if (msg['unixTime'] < lastUnixTime - 24 * 60 * 60) {
-        //    // split line
-        //    if (lastLatLong) {
-        //        jumps.push([
-        //            latlong,
-        //            lastLatLong
-        //        ]);
-        //    }
-        //    latlongs.push([]);
-        //    currLine++;
-        //}
+
         msg.lat = msg.latitude;
         msg.lng = msg.longitude;
         latlongs[currLine].unshift(msg);
         lastUnixTime = msg['unixTime'];
-        // lastLatLong = latlong.slice();
+
         if (msg['messageType'] != "UNLIMITED-TRACK") {
             messageData.push(JSON.parse(JSON.stringify(msg)))
         }
@@ -68,7 +57,6 @@ function updatePoints(data) {
         }
     }
     lastMessage = latlongs.at(0).at(-1);
-    console.log(lastMessage);
 }
 
 let latlongs = [[]];
@@ -99,8 +87,6 @@ function getClosestGPXPoint() {
     if (plannedPoints.length == 0 || !lastMessage)
         return;
 
-    console.log("calculating closest point");
-
     let closestD = Infinity;
     for(const planned of plannedPoints){
         let dist = map.distance(planned, lastMessage) / 1000;
@@ -110,7 +96,6 @@ function getClosestGPXPoint() {
         }
     }
 
-    console.log("closestD: " + closestD + " distance " + closestGPXPoint.meta.distance);
     currentDistance = closestGPXPoint.meta.distance;
     if(elevationPlot)
     	elevationPlot.updatePosition(currentDistance);
@@ -118,7 +103,16 @@ function getClosestGPXPoint() {
 
 // setInterval(getPoints, 1000 * 60 * 2);
 
-const trackColour = '#4141E7';
+let updateTimeSinceInterval;
+
+function updateTimeSince() {
+    let el = document.querySelector('#time-since');
+    if (!el || !lastMessage) {
+        return;
+    }
+    const updateSince = moment.unix(lastMessage.unixTime).fromNow();
+    el.innerText = updateSince;
+}
 
 function drawOverlay() {
     if (polyline) {
@@ -129,9 +123,6 @@ function drawOverlay() {
             color: trackColour,
             weight: 3,
             smoothFactor: 2,
-        //}).arrowheads({
-        //    frequency: '50px',
-        //    size: '12px'
         }).addTo(map);
 
     for (const msg of latlongs[0]) {
@@ -146,9 +137,6 @@ function drawOverlay() {
         }).addTo(allMessagePointsLayer);
         marker.bindPopup(JSON.stringify(msg, null, 2));
     }
-    //allMessagePointsLayer.addTo(map);
-
-    // const geodesic = new L.Geodesic(jumps, { color: 'blue', opacity: 0.5, dashArray: '8', weight: 2 }).arrowheads({ size: '12px', dashArray: '0' }).addTo(map);
 
     for (const msg of messageData) {
         const latlong = L.latLng(msg['latitude'], msg['longitude']);
@@ -167,7 +155,6 @@ function drawOverlay() {
         if (currentMarker)
             currentMarker.remove(map);
 
-        const updateSince = moment.unix(lastMessage.unixTime).fromNow();
         let stopInfo = '';
         let stopped = false;
 
@@ -205,10 +192,15 @@ function drawOverlay() {
                     <b>Current position</b><br>
                     ${data.emoji} ${data.name}<br>
                     <a href="https://maps.google.com/?q=${lastMessage.lat},${lastMessage.lng}" target="_blank" rel="noopener noreferrer">[view on Google Maps]</a>
-                    <p>Last update: ${updateSince}.</p>
+                    <p>Last update: <span id="time-since"></span></p>
                     <p>Tracker battery status: ${lastMessage.batteryState.toLowerCase()}</p>
                     ${stopInfo}
-                    `)
+                    `);
+
+                    if (updateTimeSinceInterval)
+                        clearInterval(updateTimeSinceInterval);
+
+                    updateTimeSinceInterval = setInterval(updateTimeSince, 1000);
 
     		});
     		return "Loading...";
