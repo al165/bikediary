@@ -163,9 +163,12 @@ function drawOverlay() {
         let stopInfo = '';
         let stopped = false;
 
-	// should also check if distance to last stop is less than
-	// 100m, in case tracker is left on
-        if (lastMessage['pointType']) {
+        let lastStop = stops.at(0);
+
+        if (
+            lastMessage['pointType'] ||
+            (lastStop && map.distance(lastMessage, lastStop) < 100)
+        ) {
             const stopString = stopTypeNames[lastMessage.pointType];
             stopInfo = `<b>Stopped: ${stopString}</b><br>${lastMessage.pointDetails}</p>`;
             stopped = true;
@@ -251,7 +254,7 @@ plannedRoute = new L.GPX('planned.gpx', {
     }
 }).on('addpoint', function (ev) {
 
-      console.log('Added ' + ev.point_type + ' point: ' + ev.point);
+    console.log('Added ' + ev.point_type + ' point: ' + ev.point);
     if (ev.point_type === "start") {
         ev.point.bindPopup(`<b>Planned Route: ${ev.target.get_name()}</b><br>Distance: ${Math.round(ev.target.get_distance() / 100) / 10 + 'km'}<br>Expected moving time: ${ev.target.get_duration_string(ev.target.get_total_time(), true)}<br>Elevation gain: ${Math.round(ev.target.get_elevation_gain()) + 'm'}`)
         ev.point.setIcon(new L.BeautifyIcon.icon({
@@ -271,16 +274,11 @@ plannedRoute = new L.GPX('planned.gpx', {
         ev.point.bindTooltip('Planned route end');
     }
 }).on('loaded', function (ev) {
-    console.log(ev.target.get_name());
-    console.log(Math.round(ev.target.get_distance() / 100) / 10 + 'km');
-    console.log(ev.target.get_duration_string(ev.target.get_total_time(), true));
-    console.log(ev.target.get_elevation_gain() + 'm');
     const elevationDataAll = ev.target.get_elevation_data();
     plannedPoints = plannedRoute.getLayers()[0].getLayers()[0].getLatLngs();
     for(let i = 0; i < plannedPoints.length; i++){
         plannedPoints[i].meta.distance = elevationDataAll[i][0]
     }
-    console.log(plannedPoints[57]);
     elevationPlot = new ElevationPlotter(document.getElementById("elevationContainer"), plannedPoints);
     getClosestGPXPoint();
 }).addTo(map);
